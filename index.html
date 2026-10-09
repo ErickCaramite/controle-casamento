@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Nosso Casamento — Controle de orçamento</title>
+<style>
+:root{--bg:#f7f4f1;--card:#fff;--ink:#2c2928;--muted:#79716d;--accent:#9b6b73;--accent2:#ead9dc;--line:#eee6e3;--green:#36785c;--red:#b94d4d;--gold:#a77a35}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+header{padding:25px max(18px,calc((100% - 1150px)/2));background:linear-gradient(120deg,#f2e5e5,#faf6f1);border-bottom:1px solid var(--line)}
+h1{font-size:clamp(24px,4vw,34px);margin:0 0 5px;font-family:Georgia,serif;font-weight:600}header p{margin:0;color:var(--muted)}
+main{max-width:1150px;margin:22px auto;padding:0 16px 40px}.topline{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+button,.btn{border:0;border-radius:10px;padding:10px 14px;background:var(--accent);color:white;font-weight:650;cursor:pointer}button.secondary{background:#f0e7e6;color:#65464b}button.danger{background:#fff0ef;color:var(--red)}button:disabled{opacity:.5;cursor:not-allowed}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.card{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:17px;box-shadow:0 4px 15px #43251a06}.metric span{color:var(--muted);font-size:13px}.metric strong{display:block;font-size:clamp(20px,2.5vw,27px);margin-top:8px}.metric small{color:var(--muted)}
+.progress{height:9px;background:#f0e9e6;border-radius:99px;overflow:hidden;margin-top:12px}.progress div{height:100%;width:0;background:var(--accent);transition:width .2s}
+.layout{display:grid;grid-template-columns:1.2fr .8fr;gap:14px;margin-top:16px}.section-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 12px}.section-title h2{font-size:18px;margin:0}.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+input,select,textarea{width:100%;padding:10px 11px;border:1px solid #ded4d0;border-radius:9px;background:#fff;color:var(--ink);font:inherit}label{font-size:12px;color:var(--muted);display:block;margin:0 0 5px}.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:11px}.formgrid .wide{grid-column:1/-1}.field{min-width:0}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:10px 7px;border-bottom:1px solid var(--line);vertical-align:top}th{color:var(--muted);font-weight:600}td strong{font-size:14px}.pill{display:inline-block;padding:4px 8px;border-radius:99px;background:#f2ecea;font-size:11px;white-space:nowrap}.pill.paid{background:#e4f3e9;color:var(--green)}.pill.pending{background:#fff2d9;color:#8c631e}.pill.partial{background:#e9efff;color:#425e9a}
+.tablewrap{overflow:auto}.empty{padding:20px;text-align:center;color:var(--muted)}.small{font-size:12px;color:var(--muted)}.notice{padding:12px;border-radius:10px;background:#fff8e8;color:#765820;margin:12px 0;font-size:13px}.status{font-size:12px;color:var(--muted)}.status.ok{color:var(--green)}.status.err{color:var(--red)}.barrow{margin:13px 0}.barlabel{display:flex;justify-content:space-between;gap:8px;font-size:13px}.bar{height:7px;background:#f0e9e6;border-radius:99px;margin-top:6px;overflow:hidden}.bar div{height:100%;background:#b98b91}
+dialog{border:0;border-radius:16px;max-width:650px;width:calc(100% - 24px);padding:22px;box-shadow:0 20px 80px #0003}dialog::backdrop{background:#211b1b88}.close{float:right;background:transparent;color:var(--muted);font-size:22px;padding:0 6px}
+@media(max-width:850px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.layout{grid-template-columns:1fr}}
+@media(max-width:480px){.grid{grid-template-columns:1fr 1fr}.metric strong{font-size:19px}.formgrid{grid-template-columns:1fr}.formgrid .wide{grid-column:auto}th,td{padding:8px 5px}}
+</style>
+</head>
+<body>
+<header><h1>Nosso Casamento ♡</h1><p>Um lugar para cuidar dos detalhes e manter o orçamento sob controle.</p></header>
+<main>
+  <div class="topline">
+    <div><strong id="weddingName">Planejamento do casamento</strong><div class="status" id="syncStatus">Modo demonstração: dados salvos neste navegador.</div></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="secondary" id="settingsBtn">Configurar sincronização</button><button id="addBtn">+ Nova despesa</button></div>
+  </div>
+  <section class="grid">
+    <div class="card metric"><span>🎯 Orçamento total</span><strong id="budgetMetric">R$ 0,00</strong><small>Meta definida por você</small></div>
+    <div class="card metric"><span>💸 Já pago</span><strong id="paidMetric">R$ 0,00</strong><small>Dinheiro que já saiu</small></div>
+    <div class="card metric"><span>🧾 Comprometido</span><strong id="committedMetric">R$ 0,00</strong><small>Contratado ou planejado</small></div>
+    <div class="card metric"><span>💚 Disponível</span><strong id="availableMetric">R$ 0,00</strong><small id="availableNote">Orçamento menos compromissos</small><div class="progress"><div id="progressBar"></div></div></div>
+  </section>
+  <div class="layout">
+    <section class="card">
+      <div class="section-title"><h2>Despesas e itens</h2><button class="secondary" id="exportBtn">Exportar CSV</button></div>
+      <div class="filters"><input id="searchInput" placeholder="Buscar item ou fornecedor…" style="flex:1;min-width:150px"><select id="filterStatus" style="width:auto"><option value="">Todos os status</option><option value="A contratar">A contratar</option><option value="Contratado">Contratado</option><option value="Parcialmente pago">Parcialmente pago</option><option value="Quitado">Quitado</option></select></div>
+      <div class="tablewrap"><table><thead><tr><th>Item</th><th>Valor</th><th>Pago</th><th>Status</th><th></th></tr></thead><tbody id="expenseRows"></tbody></table></div>
+      <div class="empty" id="emptyState" hidden>Nenhum item cadastrado ainda. Clique em “Nova despesa” para começar.</div>
+    </section>
+    <aside style="display:grid;gap:14px;align-content:start">
+      <section class="card">
+        <div class="section-title"><h2>Meta do casamento</h2><button class="secondary" id="budgetBtn">Editar</button></div>
+        <div class="small">Defina um orçamento único para todo o casamento.</div>
+        <div style="font-size:25px;font-weight:700;margin-top:8px" id="budgetSide">R$ 0,00</div>
+        <div class="small" id="budgetSummary">Nenhum orçamento definido.</div>
+        <div class="small" style="margin-top:8px">Data do casamento: <strong id="weddingDateSide">Não definida</strong></div>
+      </section>
+      <section class="card"><div class="section-title"><h2>Economia mensal</h2></div><div id="monthlySavings" class="small">Defina a data do casamento e o orçamento para calcular.</div></section>
+      <section class="card"><div class="section-title"><h2>Por categoria</h2></div><div id="categoryBars" class="small">Cadastre despesas para ver o resumo.</div></section>
+      <section class="card"><div class="section-title"><h2>Próximos vencimentos</h2></div><div id="dueList" class="small">Nenhum vencimento cadastrado.</div></section>
+      <section class="card"><div class="section-title"><h2>Lista do que falta</h2></div><div id="pendingList" class="small">Seus itens a contratar aparecerão aqui.</div></section>
+    </aside>
+  </div>
+  <p class="small" style="text-align:center;margin-top:18px">Seus dados são importantes: exporte um CSV como cópia de segurança. Para sincronizar entre dispositivos, configure um projeto Supabase seguindo o arquivo LEIA-ME.</p>
+</main>
+
+<dialog id="expenseDialog">
+<button class="close" type="button" data-close="expenseDialog">×</button><h2 id="expenseDialogTitle">Nova despesa</h2>
+<form id="expenseForm">
+<input type="hidden" id="expenseId">
+<div class="formgrid">
+<div class="field"><label for="itemName">Item / serviço *</label><input id="itemName" required placeholder="Ex.: Buffet"></div>
+<div class="field"><label for="category">Categoria</label><select id="category"><option>Local e estrutura</option><option>Buffet e bebidas</option><option>Decoração</option><option>Foto e vídeo</option><option>Vestuário e beleza</option><option>Música e entretenimento</option><option>Convites e papelaria</option><option>Alianças</option><option>Transporte</option><option>Documentação</option><option>Lua de mel</option><option>Lembrancinhas</option><option>Outros</option></select></div>
+<div class="field"><label for="vendor">Fornecedor (opcional)</label><input id="vendor" placeholder="Nome do fornecedor"></div>
+<div class="field"><label for="total">Valor total (R$) *</label><input id="total" type="number" min="0" step="0.01" required></div>
+<div class="field"><label for="paid">Valor já pago (R$)</label><input id="paid" type="number" min="0" step="0.01" value="0"></div>
+<div class="field"><label for="status">Situação</label><select id="status"><option>A contratar</option><option>Contratado</option><option>Parcialmente pago</option><option>Quitado</option></select></div>
+<div class="field"><label for="dueDate">Próximo vencimento</label><input id="dueDate" type="date"></div>
+<div class="field"><label for="installment">Valor da próxima parcela (R$)</label><input id="installment" type="number" min="0" step="0.01" value="0"></div>
+<div class="field wide"><label for="notes">Observações</label><textarea id="notes" rows="2" placeholder="Parcelas, contrato, detalhes…"></textarea></div>
+</div>
+<div class="actions"><button type="submit">Salvar despesa</button><button type="button" class="secondary" data-close="expenseDialog">Cancelar</button></div>
+</form></dialog>
+
+<dialog id="budgetDialog"><button class="close" type="button" data-close="budgetDialog">×</button><h2>Orçamento do casamento</h2><form id="budgetForm"><div class="field"><label for="weddingTitle">Nome do planejamento</label><input id="weddingTitle" placeholder="Ex.: Nosso casamento"></div><div class="field" style="margin-top:12px"><label for="budgetInput">Orçamento total (R$)</label><input id="budgetInput" type="number" min="0" step="0.01" required placeholder="30000"></div><div class="actions"><button type="submit">Salvar orçamento</button><button type="button" class="secondary" data-close="budgetDialog">Cancelar</button></div></form></dialog>
+
+<dialog id="settingsDialog"><button class="close" type="button" data-close="settingsDialog">×</button><h2>Sincronização por código de acesso</h2>
+<p class="small">Configure a URL e a chave pública do Supabase uma única vez. Depois, use o mesmo código secreto nos seus dispositivos para acessar o mesmo planejamento, sem conta ou login.</p>
+<form id="settingsForm">
+<div class="field"><label for="supabaseUrl">Project URL</label><input id="supabaseUrl" type="url" placeholder="https://seu-projeto.supabase.co"></div>
+<div class="field" style="margin-top:10px"><label for="supabaseKey">Chave pública anon / publishable</label><input id="supabaseKey" type="password" placeholder="Chave pública do projeto"></div>
+<div class="field" style="margin-top:10px"><label for="accessCode">Código secreto de acesso</label><input id="accessCode" type="password" minlength="16" required placeholder="Use uma frase longa e difícil de adivinhar"></div>
+<div class="actions"><button type="submit">Salvar e sincronizar</button><button type="button" class="secondary" id="disconnectBtn">Desconectar</button></div>
+<div id="settingsMessage" class="small" style="margin-top:10px"></div></form>
+<p class="notice">Use um código longo, com pelo menos 16 caracteres. Ele funciona como chave de criptografia: quem não souber o código não consegue ler os dados, mas qualquer pessoa que o conheça poderá acessar o planejamento. Guarde o código com segurança; não há recuperação se você o perder.</p></dialog>
+<script>
+const $=id=>document.getElementById(id);
+const brl=n=>Number(n||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const today=()=>new Date().toISOString().slice(0,10);
+let state={budget:0,title:'Planejamento do casamento',weddingDate:'',expenses:[]};
+let remote={url:'',key:'',accessCode:'',vaultId:''};
+const localKey='weddingBudgetApp_v1', remoteKey='weddingSupabaseCodeConfig_v1';
+function loadLocal(){try{const x=JSON.parse(localStorage.getItem(localKey)||'{}');state={...state,...x};remote={...remote,...JSON.parse(localStorage.getItem(remoteKey)||'{}')};}catch(e){}}
+function saveLocal(){localStorage.setItem(localKey,JSON.stringify(state));}
+function setStatus(msg,kind=''){ $('syncStatus').textContent=msg;$('syncStatus').className='status '+kind;}
+function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function statusClass(s){return s==='Quitado'?'paid':s==='Parcialmente pago'?'partial':s==='A contratar'?'pending':''}
+function render(){
+ $('weddingName').textContent=state.title||'Planejamento do casamento';
+ const paid=state.expenses.reduce((a,e)=>a+Number(e.paid||0),0);
+ const committed=state.expenses.reduce((a,e)=>a+Number(e.total||0),0);
+ const available=Number(state.budget||0)-committed;
+ $('budgetMetric').textContent=brl(state.budget);$('paidMetric').textContent=brl(paid);$('committedMetric').textContent=brl(committed);$('availableMetric').textContent=brl(available);
+ $('budgetSide').textContent=brl(state.budget);
+ $('budgetSummary').textContent=state.budget?`${Math.min(999,committed/state.budget*100).toLocaleString('pt-BR',{maximumFractionDigits:1})}% do orçamento comprometido`:'Nenhum orçamento definido.';
+ $('weddingDateSide').textContent=state.weddingDate?new Date(state.weddingDate+'T12:00:00').toLocaleDateString('pt-BR'):'Não definida';
+ const remaining=Math.max(0,Number(state.budget||0)-paid);
+ let months=0;
+ if(state.weddingDate){const now=new Date();now.setHours(0,0,0,0);const target=new Date(state.weddingDate+'T12:00:00');if(target>now){months=Math.max(1,(target.getFullYear()-now.getFullYear())*12+(target.getMonth()-now.getMonth())+(target.getDate()>now.getDate()?1:0));}}
+ $('monthlySavings').innerHTML=state.weddingDate&&months>0&&state.budget?`Faltam aproximadamente <strong>${months} mês(es)</strong> até a data.<br>Para cobrir o orçamento ainda não pago (${brl(remaining)}), reserve cerca de <strong>${brl(remaining/months)} por mês</strong>.<br><span class="small">Cálculo simples, sem considerar rendimentos ou inflação.</span>`:state.weddingDate&&months===0?'A data definida já chegou ou passou. Atualize a data para calcular uma meta mensal futura.':'Defina a data do casamento e o orçamento para calcular.';
+ $('availableNote').textContent=available<0?'Atenção: orçamento ultrapassado':'Orçamento menos valores comprometidos';
+ $('progressBar').style.width=state.budget?Math.min(100,committed/state.budget*100)+'%':'0%';
+ $('progressBar').style.background=available<0?'var(--red)':'var(--accent)';
+ const q=$('searchInput').value.toLowerCase(),f=$('filterStatus').value;
+ const list=state.expenses.filter(e=>(!q||`${e.name} ${e.vendor||''} ${e.category}`.toLowerCase().includes(q))&&(!f||e.status===f));
+ $('expenseRows').innerHTML=list.map(e=>`<tr><td><strong>${escapeHtml(e.name)}</strong><br><span class="small">${escapeHtml(e.category)}${e.vendor?' · '+escapeHtml(e.vendor):''}</span></td><td>${brl(e.total)}<br><span class="small">faltam ${brl(Math.max(0,e.total-e.paid))}</span></td><td>${brl(e.paid)}</td><td><span class="pill ${statusClass(e.status)}">${escapeHtml(e.status)}</span></td><td><button class="secondary" data-edit="${e.id}" style="padding:6px 8px">Editar</button><button class="danger" data-delete="${e.id}" style="padding:6px 8px;margin-top:4px">Excluir</button></td></tr>`).join('');
+ $('emptyState').hidden=list.length>0;
+ const cats={};state.expenses.forEach(e=>cats[e.category]=(cats[e.category]||0)+Number(e.total||0));
+ const sorted=Object.entries(cats).sort((a,b)=>b[1]-a[1]);
+ $('categoryBars').innerHTML=sorted.length?sorted.map(([c,v])=>`<div class="barrow"><div class="barlabel"><span>${escapeHtml(c)}</span><strong>${brl(v)}</strong></div><div class="bar"><div style="width:${committed?Math.min(100,v/committed*100):0}%"></div></div></div>`).join(''):'Cadastre despesas para ver o resumo.';
+ const due=state.expenses.filter(e=>e.dueDate&&Number(e.total)>Number(e.paid)).sort((a,b)=>a.dueDate.localeCompare(b.dueDate)).slice(0,5);
+ $('dueList').innerHTML=due.length?due.map(e=>`<div style="padding:8px 0;border-bottom:1px solid var(--line)"><strong>${escapeHtml(e.name)}</strong><br>${new Date(e.dueDate+'T12:00:00').toLocaleDateString('pt-BR')} · ${brl(e.installment||Math.max(0,e.total-e.paid))}</div>`).join(''):'Nenhum vencimento pendente cadastrado.';
+ const pending=state.expenses.filter(e=>e.status==='A contratar');
+ $('pendingList').innerHTML=pending.length?pending.map(e=>`<div style="padding:7px 0;border-bottom:1px solid var(--line)">☐ ${escapeHtml(e.name)} <span style="float:right">${brl(e.total)}</span></div>`).join(''):'Tudo certo — não há itens marcados como “A contratar”.';
+}
+function openExpense(e){$('expenseForm').reset();$('expenseId').value=e?.id||'';$('expenseDialogTitle').textContent=e?'Editar despesa':'Nova despesa';$('itemName').value=e?.name||'';$('category').value=e?.category||'Outros';$('vendor').value=e?.vendor||'';$('total').value=e?.total??'';$('paid').value=e?.paid??0;$('status').value=e?.status||'A contratar';$('dueDate').value=e?.dueDate||'';$('installment').value=e?.installment??0;$('notes').value=e?.notes||'';$('expenseDialog').showModal();}
+async function api(path,opts={}){
+ const r=await fetch(remote.url.replace(/\/$/,'')+'/rest/v1/'+path,{...opts,headers:{apikey:remote.key,Authorization:'Bearer '+remote.key,'Content-Type':'application/json',Prefer:'return=representation',...(opts.headers||{})}});
+ if(!r.ok)throw new Error(await r.text());return r.status===204?null:r.json();
+}
+async function sha256Hex(s){const d=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return [...new Uint8Array(d)].map(b=>b.toString(16).padStart(2,'0')).join('');}
+async function deriveCryptoKey(code,salt){
+ const material=await crypto.subtle.importKey('raw',new TextEncoder().encode(code),'PBKDF2',false,['deriveKey']);
+ return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:250000,hash:'SHA-256'},material,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+}
+function b64(bytes){return btoa(String.fromCharCode(...new Uint8Array(bytes)));}
+function unb64(s){return Uint8Array.from(atob(s),c=>c.charCodeAt(0));}
+async function encryptState(){
+ const salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12));
+ const key=await deriveCryptoKey(remote.accessCode,salt);
+ const data=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,new TextEncoder().encode(JSON.stringify(state)));
+ return JSON.stringify({v:1,salt:b64(salt),iv:b64(iv),data:b64(data)});
+}
+async function decryptState(blob){
+ const o=JSON.parse(blob);if(o.v!==1)throw new Error('Versão de dados não reconhecida.');
+ const key=await deriveCryptoKey(remote.accessCode,unb64(o.salt));
+ const clear=await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(o.iv)},key,unb64(o.data));
+ return JSON.parse(new TextDecoder().decode(clear));
+}
+async function syncLoad(){
+ if(!remote.url||!remote.key||!remote.accessCode)return false;
+ try{
+  remote.vaultId=await sha256Hex('wedding-vault-v1:'+remote.accessCode);
+  const rows=await api('wedding_vault?id=eq.'+remote.vaultId+'&select=id,encrypted_data');
+  if(rows&&rows.length){state=await decryptState(rows[0].encrypted_data);saveLocal();}
+  else await syncSave(true);
+  setStatus('Sincronização por código ativa. Dados criptografados na nuvem.','ok');render();return true;
+ }catch(e){setStatus('Falha na sincronização: '+e.message,'err');return false;}
+}
+let syncTimer;
+async function syncSave(immediate=false){
+ saveLocal();if(!remote.url||!remote.key||!remote.accessCode)return;
+ clearTimeout(syncTimer);
+ const work=async()=>{try{
+  remote.vaultId=await sha256Hex('wedding-vault-v1:'+remote.accessCode);
+  const encrypted_data=await encryptState();
+  const rows=await api('wedding_vault?id=eq.'+remote.vaultId+'&select=id');
+  if(rows&&rows.length)await api('wedding_vault?id=eq.'+remote.vaultId,{method:'PATCH',body:JSON.stringify({encrypted_data,updated_at:new Date().toISOString()})});
+  else await api('wedding_vault',{method:'POST',body:JSON.stringify({id:remote.vaultId,encrypted_data,updated_at:new Date().toISOString()})});
+  setStatus('Sincronizado na nuvem · criptografado','ok');
+ }catch(e){setStatus('Salvo localmente; sincronização falhou. Confira a configuração. '+e.message,'err');}};
+ if(immediate)await work();else syncTimer=setTimeout(work,400);
+}
+$('addBtn').onclick=()=>openExpense();$('budgetBtn').onclick=()=>{$('weddingTitle').value=state.title;$('budgetInput').value=state.budget||'';$('weddingDateInput').value=state.weddingDate||'';$('budgetDialog').showModal();};$('settingsBtn').onclick=()=>{$('supabaseUrl').value=remote.url;$('supabaseKey').value=remote.key;$('accessCode').value='';$('settingsDialog').showModal();};
+document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>$(b.dataset.close).close());
+$('expenseForm').onsubmit=async ev=>{ev.preventDefault();const id=$('expenseId').value||crypto.randomUUID();const e={id,name:$('itemName').value.trim(),category:$('category').value,vendor:$('vendor').value.trim(),total:Number($('total').value),paid:Number($('paid').value||0),status:$('status').value,dueDate:$('dueDate').value,installment:Number($('installment').value||0),notes:$('notes').value.trim()};if(e.paid>e.total){if(!confirm('O valor pago é maior que o valor total. Deseja salvar mesmo assim?'))return;}if(e.paid>=e.total&&e.total>0)e.status='Quitado';else if(e.paid>0&&e.status!=='A contratar')e.status='Parcialmente pago';const i=state.expenses.findIndex(x=>x.id===id);if(i>=0)state.expenses[i]=e;else state.expenses.push(e);$('expenseDialog').close();render();await syncSave();};
+$('budgetForm').onsubmit=async ev=>{ev.preventDefault();state.title=$('weddingTitle').value.trim()||'Planejamento do casamento';state.budget=Number($('budgetInput').value);state.weddingDate=$('weddingDateInput').value;$('budgetDialog').close();render();await syncSave();};
+$('expenseRows').onclick=async ev=>{const edit=ev.target.closest('[data-edit]'),del=ev.target.closest('[data-delete]');if(edit){const e=state.expenses.find(x=>x.id===edit.dataset.edit);if(e)openExpense(e);}if(del&&confirm('Excluir esta despesa?')){state.expenses=state.expenses.filter(x=>x.id!==del.dataset.delete);render();await syncSave();}};
+$('searchInput').oninput=render;$('filterStatus').onchange=render;
+$('exportBtn').onclick=()=>{const rows=[['Item','Categoria','Fornecedor','Valor total','Pago','Restante','Status','Vencimento','Próxima parcela','Observações'],...state.expenses.map(e=>[e.name,e.category,e.vendor,e.total,e.paid,Math.max(0,e.total-e.paid),e.status,e.dueDate,e.installment,e.notes])];const csv=rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(';')).join('\r\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'}));a.download='orcamento-casamento.csv';a.click();URL.revokeObjectURL(a.href);};
+$('settingsForm').onsubmit=async ev=>{
+ ev.preventDefault();const msg=$('settingsMessage');msg.textContent='Configurando sincronização…';
+ remote.url=$('supabaseUrl').value.trim();remote.key=$('supabaseKey').value.trim();remote.accessCode=$('accessCode').value;
+ if(!remote.url||!remote.key||remote.accessCode.length<16){msg.textContent='Informe URL, chave pública e um código secreto com pelo menos 16 caracteres.';return;}
+ try{
+  localStorage.setItem(remoteKey,JSON.stringify({url:remote.url,key:remote.key}));
+  const ok=await syncLoad();
+  if(ok){localStorage.setItem(remoteKey,JSON.stringify({url:remote.url,key:remote.key,accessCode:remote.accessCode}));msg.textContent='Sincronização configurada com sucesso.';setTimeout(()=>$('settingsDialog').close(),700);}
+  else msg.textContent='Não foi possível sincronizar. Confira a URL, a chave e se executou o SQL do LEIA-ME.';
+ }catch(e){msg.textContent='Erro: '+e.message;}
+};
+$('disconnectBtn').onclick=()=>{remote.accessCode='';remote.vaultId='';localStorage.setItem(remoteKey,JSON.stringify({url:remote.url,key:remote.key}));setStatus('Modo local: sincronização desconectada.');$('settingsMessage').textContent='Desconectado. Os dados locais foram mantidos.';};
+
+loadLocal();render();if(remote.url&&remote.key&&remote.accessCode)syncLoad();
+</script>
+</body></html>
