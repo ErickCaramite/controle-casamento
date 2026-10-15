@@ -76,7 +76,7 @@ dialog{border:0;border-radius:16px;max-width:650px;width:calc(100% - 24px);paddi
 <div class="actions"><button type="submit">Salvar despesa</button><button type="button" class="secondary" data-close="expenseDialog">Cancelar</button></div>
 </form></dialog>
 
-<dialog id="budgetDialog"><button class="close" type="button" data-close="budgetDialog">×</button><h2>Orçamento do casamento</h2><form id="budgetForm"><div class="field"><label for="weddingTitle">Nome do planejamento</label><input id="weddingTitle" placeholder="Ex.: Nosso casamento"></div><div class="field" style="margin-top:12px"><label for="budgetInput">Orçamento total (R$)</label><input id="budgetInput" type="number" min="0" step="0.01" required placeholder="30000"></div><div class="actions"><button type="submit">Salvar orçamento</button><button type="button" class="secondary" data-close="budgetDialog">Cancelar</button></div></form></dialog>
+<dialog id="budgetDialog"><button class="close" type="button" data-close="budgetDialog">×</button><h2>Orçamento do casamento</h2><form id="budgetForm"><div class="field"><label for="weddingTitle">Nome do planejamento</label><input id="weddingTitle" placeholder="Ex.: Nosso casamento"></div><div class="field" style="margin-top:12px"><label for="budgetInput">Orçamento total (R$)</label><input id="budgetInput" type="number" min="0" step="0.01" required placeholder="30000"></div><div class="field" style="margin-top:12px"><label for="weddingDateInput">Data do casamento</label><input id="weddingDateInput" type="date"></div><div class="actions"><button type="submit">Salvar orçamento</button><button type="button" class="secondary" data-close="budgetDialog">Cancelar</button></div></form></dialog>
 
 <dialog id="settingsDialog"><button class="close" type="button" data-close="settingsDialog">×</button><h2>Sincronização por código de acesso</h2>
 <p class="small">Configure a URL e a chave pública do Supabase uma única vez. Depois, use o mesmo código secreto nos seus dispositivos para acessar o mesmo planejamento, sem conta ou login.</p>
@@ -129,7 +129,8 @@ function render(){
 }
 function openExpense(e){$('expenseForm').reset();$('expenseId').value=e?.id||'';$('expenseDialogTitle').textContent=e?'Editar despesa':'Nova despesa';$('itemName').value=e?.name||'';$('category').value=e?.category||'Outros';$('vendor').value=e?.vendor||'';$('total').value=e?.total??'';$('paid').value=e?.paid??0;$('status').value=e?.status||'A contratar';$('dueDate').value=e?.dueDate||'';$('installment').value=e?.installment??0;$('notes').value=e?.notes||'';$('expenseDialog').showModal();}
 async function api(path,opts={}){
- const r=await fetch(remote.url.replace(/\/$/,'')+'/rest/v1/'+path,{...opts,headers:{apikey:remote.key,Authorization:'Bearer '+remote.key,'Content-Type':'application/json',Prefer:'return=representation',...(opts.headers||{})}});
+ const base=remote.url.trim().replace(/\/+$/,'').replace(/\/rest\/v1$/i,'');
+ const r=await fetch(base+'/rest/v1/'+path,{...opts,headers:{apikey:remote.key,Authorization:'Bearer '+remote.key,'Content-Type':'application/json',Prefer:'return=representation',...(opts.headers||{})}});
  if(!r.ok)throw new Error(await r.text());return r.status===204?null:r.json();
 }
 async function sha256Hex(s){const d=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return [...new Uint8Array(d)].map(b=>b.toString(16).padStart(2,'0')).join('');}
