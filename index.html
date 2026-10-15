@@ -19,6 +19,43 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
 dialog{border:0;border-radius:16px;max-width:650px;width:calc(100% - 24px);padding:22px;box-shadow:0 20px 80px #0003}dialog::backdrop{background:#211b1b88}.close{float:right;background:transparent;color:var(--muted);font-size:22px;padding:0 6px}
 @media(max-width:850px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.layout{grid-template-columns:1fr}}
 @media(max-width:480px){.grid{grid-template-columns:1fr 1fr}.metric strong{font-size:19px}.formgrid{grid-template-columns:1fr}.formgrid .wide{grid-column:auto}th,td{padding:8px 5px}}
+
+.analytics{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px}
+.chart-card{min-height:260px}
+.donut-wrap{display:flex;align-items:center;gap:24px;flex-wrap:wrap}
+.donut{width:180px;height:180px;border-radius:50%;display:grid;place-items:center;
+  background:conic-gradient(var(--green) 0deg,#ead9dc 0deg);
+  position:relative;flex:none}
+.donut:before{content:"";position:absolute;width:122px;height:122px;border-radius:50%;background:white}
+.donut-center{position:relative;text-align:center;font-weight:700;font-size:18px;z-index:1}
+.legend{display:grid;gap:9px;min-width:180px}
+.legend-item{display:flex;align-items:center;gap:8px;font-size:13px}
+.legend-dot{width:11px;height:11px;border-radius:50%;background:var(--accent);flex:none}
+.legend-dot.green{background:var(--green)}
+.legend-dot.gold{background:var(--gold)}
+.legend-dot.gray{background:#c9c1bd}
+.report-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.report-box{padding:11px;border:1px solid var(--line);border-radius:10px;background:#fff}
+.report-box span{display:block;color:var(--muted);font-size:11px}
+.report-box strong{display:block;margin-top:3px;font-size:16px}
+.month-row{margin:9px 0}
+.month-label{display:flex;justify-content:space-between;font-size:12px}
+.category-filter{margin-bottom:8px}
+.print-only{display:none}
+@media(max-width:850px){.analytics{grid-template-columns:1fr}}
+@media(max-width:480px){
+  .donut{width:145px;height:145px}.donut:before{width:98px;height:98px}
+  .donut-center{font-size:15px}.donut-wrap{justify-content:center}
+  .report-grid{grid-template-columns:1fr 1fr}
+}
+@media print{
+  body{background:white}.no-print,#settingsBtn,#addBtn,#exportBtn,.filters,.actions,
+  .analytics button{display:none!important}
+  header{padding:15px;background:white}.card{box-shadow:none;break-inside:avoid}
+  .layout{grid-template-columns:1fr}.analytics{grid-template-columns:1fr 1fr}
+  .print-only{display:block}.tablewrap{overflow:visible}
+}
+
 </style>
 </head>
 <body>
@@ -55,6 +92,23 @@ dialog{border:0;border-radius:16px;max-width:650px;width:calc(100% - 24px);paddi
       <section class="card"><div class="section-title"><h2>Lista do que falta</h2></div><div id="pendingList" class="small">Seus itens a contratar aparecerão aqui.</div></section>
     </aside>
   </div>
+  <section class="analytics">
+    <section class="card chart-card">
+      <div class="section-title"><h2>Visão do orçamento</h2><button class="secondary no-print" id="printReportBtn">Imprimir relatório</button></div>
+      <div class="donut-wrap">
+        <div class="donut" id="budgetDonut"><div class="donut-center" id="donutCenter">0%<br>comprometido</div></div>
+        <div class="legend" id="budgetLegend"></div>
+      </div>
+    </section>
+    <section class="card chart-card">
+      <div class="section-title"><h2>Resumo financeiro</h2></div>
+      <div class="report-grid" id="reportGrid"></div>
+      <div style="margin-top:14px"><strong style="font-size:13px">Compromissos por mês de vencimento</strong>
+        <div id="monthlyChart" class="small" style="margin-top:8px">Cadastre vencimentos para visualizar.</div>
+      </div>
+    </section>
+  </section>
+  <p class="small print-only">Relatório do planejamento de casamento — gerado em <span id="reportDate"></span>.</p>
   <p class="small" style="text-align:center;margin-top:18px">Seus dados são importantes: exporte um CSV como cópia de segurança. Para sincronizar entre dispositivos, configure um projeto Supabase seguindo o arquivo LEIA-ME.</p>
 </main>
 
@@ -104,28 +158,77 @@ function render(){
  const paid=state.expenses.reduce((a,e)=>a+Number(e.paid||0),0);
  const committed=state.expenses.reduce((a,e)=>a+Number(e.total||0),0);
  const available=Number(state.budget||0)-committed;
- $('budgetMetric').textContent=brl(state.budget);$('paidMetric').textContent=brl(paid);$('committedMetric').textContent=brl(committed);$('availableMetric').textContent=brl(available);
+ const remaining=Math.max(0,Number(state.budget||0)-paid);
+ $('budgetMetric').textContent=brl(state.budget);$('paidMetric').textContent=brl(paid);
+ $('committedMetric').textContent=brl(committed);$('availableMetric').textContent=brl(available);
  $('budgetSide').textContent=brl(state.budget);
  $('budgetSummary').textContent=state.budget?`${Math.min(999,committed/state.budget*100).toLocaleString('pt-BR',{maximumFractionDigits:1})}% do orçamento comprometido`:'Nenhum orçamento definido.';
  $('weddingDateSide').textContent=state.weddingDate?new Date(state.weddingDate+'T12:00:00').toLocaleDateString('pt-BR'):'Não definida';
- const remaining=Math.max(0,Number(state.budget||0)-paid);
+
  let months=0;
- if(state.weddingDate){const now=new Date();now.setHours(0,0,0,0);const target=new Date(state.weddingDate+'T12:00:00');if(target>now){months=Math.max(1,(target.getFullYear()-now.getFullYear())*12+(target.getMonth()-now.getMonth())+(target.getDate()>now.getDate()?1:0));}}
- $('monthlySavings').innerHTML=state.weddingDate&&months>0&&state.budget?`Faltam aproximadamente <strong>${months} mês(es)</strong> até a data.<br>Para cobrir o orçamento ainda não pago (${brl(remaining)}), reserve cerca de <strong>${brl(remaining/months)} por mês</strong>.<br><span class="small">Cálculo simples, sem considerar rendimentos ou inflação.</span>`:state.weddingDate&&months===0?'A data definida já chegou ou passou. Atualize a data para calcular uma meta mensal futura.':'Defina a data do casamento e o orçamento para calcular.';
+ if(state.weddingDate){const now=new Date();now.setHours(0,0,0,0);const target=new Date(state.weddingDate+'T12:00:00');
+   if(target>now)months=Math.max(1,(target.getFullYear()-now.getFullYear())*12+(target.getMonth()-now.getMonth())+(target.getDate()>now.getDate()?1:0));}
+ $('monthlySavings').innerHTML=state.weddingDate&&months>0&&state.budget?
+   `Faltam aproximadamente <strong>${months} mês(es)</strong> até a data.<br>Para cobrir o orçamento ainda não pago (${brl(remaining)}), reserve cerca de <strong>${brl(remaining/months)} por mês</strong>.<br><span class="small">Cálculo simples, sem considerar rendimentos ou inflação.</span>`:
+   state.weddingDate&&months===0?'A data definida já chegou ou passou. Atualize a data para calcular uma meta mensal futura.':'Defina a data do casamento e o orçamento para calcular.';
  $('availableNote').textContent=available<0?'Atenção: orçamento ultrapassado':'Orçamento menos valores comprometidos';
  $('progressBar').style.width=state.budget?Math.min(100,committed/state.budget*100)+'%':'0%';
  $('progressBar').style.background=available<0?'var(--red)':'var(--accent)';
- const q=$('searchInput').value.toLowerCase(),f=$('filterStatus').value;
- const list=state.expenses.filter(e=>(!q||`${e.name} ${e.vendor||''} ${e.category}`.toLowerCase().includes(q))&&(!f||e.status===f));
+
+ const q=$('searchInput').value.toLowerCase(),f=$('filterStatus').value,cf=$('categoryFilter').value;
+ const list=state.expenses.filter(e=>(!q||`${e.name} ${e.vendor||''} ${e.category}`.toLowerCase().includes(q))&&(!f||e.status===f)&&(!cf||e.category===cf));
  $('expenseRows').innerHTML=list.map(e=>`<tr><td><strong>${escapeHtml(e.name)}</strong><br><span class="small">${escapeHtml(e.category)}${e.vendor?' · '+escapeHtml(e.vendor):''}</span></td><td>${brl(e.total)}<br><span class="small">faltam ${brl(Math.max(0,e.total-e.paid))}</span></td><td>${brl(e.paid)}</td><td><span class="pill ${statusClass(e.status)}">${escapeHtml(e.status)}</span></td><td><button class="secondary" data-edit="${e.id}" style="padding:6px 8px">Editar</button><button class="danger" data-delete="${e.id}" style="padding:6px 8px;margin-top:4px">Excluir</button></td></tr>`).join('');
  $('emptyState').hidden=list.length>0;
+
  const cats={};state.expenses.forEach(e=>cats[e.category]=(cats[e.category]||0)+Number(e.total||0));
+ const catNames=Object.keys(cats).sort((a,b)=>a.localeCompare(b,'pt-BR'));
+ const selected=$('categoryFilter').value;
+ $('categoryFilter').innerHTML='<option value="">Todas as categorias</option>'+catNames.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+ $('categoryFilter').value=catNames.includes(selected)?selected:'';
  const sorted=Object.entries(cats).sort((a,b)=>b[1]-a[1]);
  $('categoryBars').innerHTML=sorted.length?sorted.map(([c,v])=>`<div class="barrow"><div class="barlabel"><span>${escapeHtml(c)}</span><strong>${brl(v)}</strong></div><div class="bar"><div style="width:${committed?Math.min(100,v/committed*100):0}%"></div></div></div>`).join(''):'Cadastre despesas para ver o resumo.';
- const due=state.expenses.filter(e=>e.dueDate&&Number(e.total)>Number(e.paid)).sort((a,b)=>a.dueDate.localeCompare(b.dueDate)).slice(0,5);
- $('dueList').innerHTML=due.length?due.map(e=>`<div style="padding:8px 0;border-bottom:1px solid var(--line)"><strong>${escapeHtml(e.name)}</strong><br>${new Date(e.dueDate+'T12:00:00').toLocaleDateString('pt-BR')} · ${brl(e.installment||Math.max(0,e.total-e.paid))}</div>`).join(''):'Nenhum vencimento pendente cadastrado.';
+
+ const due=state.expenses.filter(e=>e.dueDate&&Number(e.total)>Number(e.paid)).sort((a,b)=>a.dueDate.localeCompare(b.dueDate));
+ $('dueCount').textContent=due.length?`${due.length} pendente(s)`:''; 
+ $('dueList').innerHTML=due.slice(0,7).map(e=>{
+   const d=new Date(e.dueDate+'T12:00:00'),now=new Date();now.setHours(0,0,0,0);
+   const diff=Math.ceil((d-now)/86400000);
+   const label=diff<0?`atrasado há ${Math.abs(diff)} dia(s)`:diff===0?'vence hoje':`em ${diff} dia(s)`;
+   return `<div style="padding:8px 0;border-bottom:1px solid var(--line)"><strong>${escapeHtml(e.name)}</strong><br>${d.toLocaleDateString('pt-BR')} · ${brl(e.installment||Math.max(0,e.total-e.paid))} · <span class="small">${label}</span></div>`;
+ }).join('')||'Nenhum vencimento pendente cadastrado.';
+
  const pending=state.expenses.filter(e=>e.status==='A contratar');
  $('pendingList').innerHTML=pending.length?pending.map(e=>`<div style="padding:7px 0;border-bottom:1px solid var(--line)">☐ ${escapeHtml(e.name)} <span style="float:right">${brl(e.total)}</span></div>`).join(''):'Tudo certo — não há itens marcados como “A contratar”.';
+
+ const budget=Number(state.budget||0), committedPct=budget?Math.min(100,Math.max(0,committed/budget*100)):0;
+ const paidPct=budget?Math.min(100,Math.max(0,paid/budget*100)):0;
+ const remainingPct=Math.max(0,100-committedPct);
+ const degPaid=paidPct*3.6, degCommitted=Math.max(0,committedPct-paidPct)*3.6;
+ $('budgetDonut').style.background=budget?
+   `conic-gradient(var(--green) 0deg ${degPaid}deg,var(--gold) ${degPaid}deg ${degPaid+degCommitted}deg,#ead9dc ${degPaid+degCommitted}deg 360deg)`:
+   'conic-gradient(#ead9dc 0deg 360deg)';
+ $('donutCenter').innerHTML=`${committedPct.toLocaleString('pt-BR',{maximumFractionDigits:0})}%<br><span class="small">comprometido</span>`;
+ $('budgetLegend').innerHTML=`
+   <div class="legend-item"><span class="legend-dot green"></span>Já pago <strong>${brl(paid)}</strong></div>
+   <div class="legend-item"><span class="legend-dot gold"></span>A pagar <strong>${brl(Math.max(0,committed-paid))}</strong></div>
+   <div class="legend-item"><span class="legend-dot gray"></span>Disponível <strong>${brl(Math.max(0,available))}</strong></div>`;
+
+ $('reportGrid').innerHTML=[
+   ['Total de itens',state.expenses.length],
+   ['Já pago',brl(paid)],
+   ['A pagar',brl(Math.max(0,committed-paid))],
+   ['A contratar',pending.length],
+   ['Próximos vencimentos',due.length],
+   ['Orçamento disponível',brl(available)]
+ ].map(x=>`<div class="report-box"><span>${x[0]}</span><strong>${x[1]}</strong></div>`).join('');
+
+ const monthly={};
+ due.forEach(e=>{const key=e.dueDate.slice(0,7);monthly[key]=(monthly[key]||0)+Number(e.installment||Math.max(0,e.total-e.paid));});
+ const m=Object.entries(monthly).sort((a,b)=>a[0].localeCompare(b[0])).slice(0,6), maxM=Math.max(0,...m.map(x=>x[1]));
+ $('monthlyChart').innerHTML=m.length?m.map(([key,v])=>{
+   const [y,mo]=key.split('-');const label=new Date(Number(y),Number(mo)-1,1).toLocaleDateString('pt-BR',{month:'short',year:'numeric'});
+   return `<div class="month-row"><div class="month-label"><span>${label}</span><strong>${brl(v)}</strong></div><div class="bar"><div style="width:${maxM?Math.min(100,v/maxM*100):0}%"></div></div></div>`;
+ }).join(''):'Cadastre vencimentos para visualizar.';
 }
 function openExpense(e){$('expenseForm').reset();$('expenseId').value=e?.id||'';$('expenseDialogTitle').textContent=e?'Editar despesa':'Nova despesa';$('itemName').value=e?.name||'';$('category').value=e?.category||'Outros';$('vendor').value=e?.vendor||'';$('total').value=e?.total??'';$('paid').value=e?.paid??0;$('status').value=e?.status||'A contratar';$('dueDate').value=e?.dueDate||'';$('installment').value=e?.installment??0;$('notes').value=e?.notes||'';$('expenseDialog').showModal();}
 async function api(path,opts={}){
@@ -181,7 +284,8 @@ document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>$(b.dataset.c
 $('expenseForm').onsubmit=async ev=>{ev.preventDefault();const id=$('expenseId').value||crypto.randomUUID();const e={id,name:$('itemName').value.trim(),category:$('category').value,vendor:$('vendor').value.trim(),total:Number($('total').value),paid:Number($('paid').value||0),status:$('status').value,dueDate:$('dueDate').value,installment:Number($('installment').value||0),notes:$('notes').value.trim()};if(e.paid>e.total){if(!confirm('O valor pago é maior que o valor total. Deseja salvar mesmo assim?'))return;}if(e.paid>=e.total&&e.total>0)e.status='Quitado';else if(e.paid>0&&e.status!=='A contratar')e.status='Parcialmente pago';const i=state.expenses.findIndex(x=>x.id===id);if(i>=0)state.expenses[i]=e;else state.expenses.push(e);$('expenseDialog').close();render();await syncSave();};
 $('budgetForm').onsubmit=async ev=>{ev.preventDefault();state.title=$('weddingTitle').value.trim()||'Planejamento do casamento';state.budget=Number($('budgetInput').value);state.weddingDate=$('weddingDateInput').value;$('budgetDialog').close();render();await syncSave();};
 $('expenseRows').onclick=async ev=>{const edit=ev.target.closest('[data-edit]'),del=ev.target.closest('[data-delete]');if(edit){const e=state.expenses.find(x=>x.id===edit.dataset.edit);if(e)openExpense(e);}if(del&&confirm('Excluir esta despesa?')){state.expenses=state.expenses.filter(x=>x.id!==del.dataset.delete);render();await syncSave();}};
-$('searchInput').oninput=render;$('filterStatus').onchange=render;
+$('searchInput').oninput=render;$('filterStatus').onchange=render;$('categoryFilter').onchange=render;
+$('printReportBtn').onclick=()=>{ $('reportDate').textContent=new Date().toLocaleDateString('pt-BR'); window.print(); };
 $('exportBtn').onclick=()=>{const rows=[['Item','Categoria','Fornecedor','Valor total','Pago','Restante','Status','Vencimento','Próxima parcela','Observações'],...state.expenses.map(e=>[e.name,e.category,e.vendor,e.total,e.paid,Math.max(0,e.total-e.paid),e.status,e.dueDate,e.installment,e.notes])];const csv=rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(';')).join('\r\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'}));a.download='orcamento-casamento.csv';a.click();URL.revokeObjectURL(a.href);};
 $('settingsForm').onsubmit=async ev=>{
  ev.preventDefault();const msg=$('settingsMessage');msg.textContent='Configurando sincronização…';
@@ -196,6 +300,6 @@ $('settingsForm').onsubmit=async ev=>{
 };
 $('disconnectBtn').onclick=()=>{remote.accessCode='';remote.vaultId='';localStorage.setItem(remoteKey,JSON.stringify({url:remote.url,key:remote.key}));setStatus('Modo local: sincronização desconectada.');$('settingsMessage').textContent='Desconectado. Os dados locais foram mantidos.';};
 
-loadLocal();render();if(remote.url&&remote.key&&remote.accessCode)syncLoad();
+loadLocal();$('reportDate').textContent=new Date().toLocaleDateString('pt-BR');render();if(remote.url&&remote.key&&remote.accessCode)syncLoad();
 </script>
 </body></html>
