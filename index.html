@@ -87,8 +87,8 @@ dialog{border:0;border-radius:16px;max-width:650px;width:calc(100% - 24px);paddi
         <div class="small" style="margin-top:8px">Data do casamento: <strong id="weddingDateSide">Não definida</strong></div>
       </section>
       <section class="card"><div class="section-title"><h2>Economia mensal</h2></div><div id="monthlySavings" class="small">Defina a data do casamento e o orçamento para calcular.</div></section>
-      <section class="card"><div class="section-title"><h2>Por categoria</h2></div><div id="categoryBars" class="small">Cadastre despesas para ver o resumo.</div></section>
-      <section class="card"><div class="section-title"><h2>Próximos vencimentos</h2></div><div id="dueList" class="small">Nenhum vencimento cadastrado.</div></section>
+      <section class="card"><div class="section-title"><h2>Por categoria</h2></div><select id="categoryFilter" class="category-filter"><option value="">Todas as categorias</option></select><div id="categoryBars" class="small">Cadastre despesas para ver o resumo.</div></section>
+      <section class="card"><div class="section-title"><h2>Próximos vencimentos</h2><span id="dueCount" class="small"></span></div><div id="dueList" class="small">Nenhum vencimento cadastrado.</div></section>
       <section class="card"><div class="section-title"><h2>Lista do que falta</h2></div><div id="pendingList" class="small">Seus itens a contratar aparecerão aqui.</div></section>
     </aside>
   </div>
